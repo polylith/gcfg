@@ -6,6 +6,9 @@ import (
 	"os"
 	"reflect"
 	"testing"
+	"bytes"
+	"strconv"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -374,5 +377,98 @@ func TestReadStringIntoExtraData(t *testing.T) {
 	}
 	if res.Section.Name != "value" {
 		t.Errorf("res.Section.Name=%q; want %q", res.Section.Name, "value")
+	}
+}
+
+func TestReadWithCallback(t *testing.T) {
+	results := [][]string{}
+	cb := func(s string, ss string, k string, v string, bv bool) error {
+		results = append(results, []string{s, ss, k, v, strconv.FormatBool(bv)})
+		return nil
+	}
+	text := `
+	[sect1]
+	key1=value1
+	[sect1 "subsect1"]
+	key2=value2
+	key3=value3
+	key4
+	key5=
+	[sect1 "subsect2"]
+	[sect2]
+	`
+	expected := [][]string{
+		[]string{"sect1", "", "", "", "true"},
+		[]string{"sect1", "", "key1", "value1", "false"},
+		[]string{"sect1", "subsect1", "", "", "true"},
+		[]string{"sect1", "subsect1", "key2", "value2", "false"},
+		[]string{"sect1", "subsect1", "key3", "value3", "false"},
+		[]string{"sect1", "subsect1", "key4", "", "true"},
+		[]string{"sect1", "subsect1", "key5", "", "false"},
+		[]string{"sect1", "subsect2", "", "", "true"},
+		[]string{"sect2", "", "", "", "true"},
+	}
+	err := ReadWithCallback(bytes.NewReader([]byte(text)), cb)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(results, expected) {
+		t.Errorf("expected %+v, got %+v", expected, results)
+	}
+
+	i := 0
+	expectedErr := errors.New("FATAL ERROR")
+	results = [][]string{}
+	cbWithError := func(s string, ss string, k string, v string, bv bool) error {
+		results = append(results, []string{s, ss, k, v, strconv.FormatBool(bv)})
+		i += 1
+		if i == 3 {
+			return expectedErr
+		}
+		return nil
+	}
+	err = ReadWithCallback(bytes.NewReader([]byte(text)), cbWithError)
+	if err != expectedErr {
+		t.Errorf("expected error: %+v", err)
+	}
+	if !reflect.DeepEqual(results, expected[:3]) {
+		t.Errorf("expected %+v, got %+v", expected, results[:3])
+	}
+}
+
+func TestReadWithCallback_WithError(t *testing.T) {
+	results := [][]string{}
+	cb := func(s string, ss string, k string, v string, bv bool) error {
+		results = append(results, []string{s, ss, k, v, strconv.FormatBool(bv)})
+		return nil
+	}
+	text := `
+	[sect1]
+	key1=value1
+	[sect1 "subsect1"]
+	key2=value2
+	key3=value3
+	key4
+	key5=
+	[sect1 "subsect2"]
+	[sect2]
+	`
+	expected := [][]string{
+		[]string{"sect1", "", "", "", "true"},
+		[]string{"sect1", "", "key1", "value1", "false"},
+		[]string{"sect1", "subsect1", "", "", "true"},
+		[]string{"sect1", "subsect1", "key2", "value2", "false"},
+		[]string{"sect1", "subsect1", "key3", "value3", "false"},
+		[]string{"sect1", "subsect1", "key4", "", "true"},
+		[]string{"sect1", "subsect1", "key5", "", "false"},
+		[]string{"sect1", "subsect2", "", "", "true"},
+		[]string{"sect2", "", "", "", "true"},
+	}
+	err := ReadWithCallback(bytes.NewReader([]byte(text)), cb)
+	if err != nil {
+		t.Error(err)
+	}
+	if !reflect.DeepEqual(results, expected) {
+		t.Errorf("expected %+v, got %+v", expected, results)
 	}
 }

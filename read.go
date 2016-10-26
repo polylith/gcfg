@@ -48,8 +48,8 @@ func unquote(s string) string {
 	return string(u)
 }
 
-func readIntoPass(c *warnings.Collector, config interface{}, fset *token.FileSet,
-	file *token.File, src []byte, subsectPass bool) error {
+func read(c *warnings.Collector, callback func(string,string,string,string,bool)error,
+	fset *token.FileSet, file *token.File, src []byte) error {
 	//
 	var s scanner.Scanner
 	var errs scanner.ErrorList
@@ -122,7 +122,7 @@ func readIntoPass(c *warnings.Collector, config interface{}, fset *token.FileSet
 			// If a section/subsection header was found, ensure a
 			// container object is created, even if there are no
 			// variables further down.
-			err := c.Collect(set(c, config, sect, sectsub, "", true, "", subsectPass))
+			err := c.Collect(callback(sect, sectsub, "", "", true))
 			if err != nil {
 				return err
 			}
@@ -168,7 +168,7 @@ func readIntoPass(c *warnings.Collector, config interface{}, fset *token.FileSet
 					}
 				}
 			}
-			err := set(c, config, sect, sectsub, n, blank, v, subsectPass)
+			err := c.Collect(callback(sect, sectsub, n, v, blank))
 			if err != nil {
 				return err
 			}
@@ -190,15 +190,50 @@ func readInto(config interface{}, fset *token.FileSet, file *token.File,
 	src []byte) error {
 	//
 	c := warnings.NewCollector(isFatal)
-	err := readIntoPass(c, config, fset, file, src, false)
+	firstPassCallback := func(s string, ss string, k string, v string, bv bool) error {
+		return set(c, config, s, ss, k, v, bv, false)
+	}
+	err := read(c, firstPassCallback, fset, file, src)
 	if err != nil {
 		return err
 	}
-	err = readIntoPass(c, config, fset, file, src, true)
+	secondPassCallback := func(s string, ss string, k string, v string, bv bool) error {
+		return set(c, config, s, ss, k, v, bv, true)
+	}
+	err = read(c, secondPassCallback, fset, file, src)
 	if err != nil {
 		return err
 	}
 	return c.Done()
+}
+
+// ReadWithCallback reads gcfg formatted data from reader and calls
+// callback with each section and option found.
+//
+// Callback is called with section, subsection, option key, option value
+// and blank value flag as arguments.
+//
+// When a section is found, callback is called with nil subsection, option key
+// and option value.
+//
+// When a subsection is found, callback is called with nil option key and
+// option value.
+//
+// If blank value flag is true, it means that the value was not set for an option
+// (as opposed to set to empty string).
+//
+// If callback returns an error, ReadWithCallback terminates with an error too.
+func ReadWithCallback(reader io.Reader, callback func(string,string,string,string,bool)error) error {
+	src, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	fset := token.NewFileSet()
+	file := fset.AddFile("", fset.Base(), len(src))
+	c := warnings.NewCollector(isFatal)
+
+	return read(c, callback, fset, file, src)
 }
 
 // ReadInto reads gcfg formatted data from reader and sets the values into the

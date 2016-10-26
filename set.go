@@ -214,7 +214,7 @@ func newValue(c *warnings.Collector, sect string, vCfg reflect.Value,
 }
 
 func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
-	blank bool, value string, subsectPass bool) error {
+	 value string, blankValue bool, subsectPass bool) error {
 	//
 	vPCfg := reflect.ValueOf(cfg)
 	if vPCfg.Kind() != reflect.Ptr || vPCfg.Elem().Kind() != reflect.Struct {
@@ -285,7 +285,7 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 		}
 		vVar = vVar.Elem()
 	}
-	if isMulti && blank {
+	if isMulti && blankValue {
 		vVar.Set(reflect.Zero(vVar.Type()))
 		return nil
 	}
@@ -309,7 +309,7 @@ func set(c *warnings.Collector, cfg interface{}, sect, sub, name string,
 	vAddrI := vAddr.Interface()
 	err, ok := error(nil), false
 	for _, s := range setters {
-		err = s(vAddrI, blank, value, t)
+		err = s(vAddrI, blankValue, value, t)
 		if err == nil {
 			ok = true
 			break

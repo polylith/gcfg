@@ -11,7 +11,7 @@ import (
 )
 
 import (
-	"gopkg.in/gcfg.v1/token"
+	"github.com/src-d/gcfg/token"
 )
 
 var fset = token.NewFileSet()

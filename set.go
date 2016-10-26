@@ -10,7 +10,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"gopkg.in/gcfg.v1/types"
+	"github.com/src-d/gcfg/types"
 	"gopkg.in/warnings.v0"
 )
 

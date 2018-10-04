@@ -1,13 +1,14 @@
 package gcfg
 
 import (
+	"bytes"
 	"fmt"
 	"math/big"
 	"os"
 	"reflect"
-	"testing"
-	"bytes"
 	"strconv"
+	"testing"
+
 	"github.com/pkg/errors"
 )
 
@@ -127,6 +128,7 @@ var readtests = []struct {
 	{"[section]\nname=\"va\\\"lue\"", &cBasic{Section: cBasicS1{Name: "va\"lue"}}, true},
 	{"[section]\nname=\"va\\nlue\"", &cBasic{Section: cBasicS1{Name: "va\nlue"}}, true},
 	{"[section]\nname=\"va\\tlue\"", &cBasic{Section: cBasicS1{Name: "va\tlue"}}, true},
+	{"[section]\nname=x:\\\\path\\\\", &cBasic{Section: cBasicS1{Name: "x:\\path\\"}}, true},
 	{"\n[section]\nname=\\", &cBasic{}, false},
 	{"\n[section]\nname=\\a", &cBasic{}, false},
 	{"\n[section]\nname=\"val\\a\"", &cBasic{}, false},

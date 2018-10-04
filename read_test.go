@@ -129,6 +129,7 @@ var readtests = []struct {
 	{"[section]\nname=\"va\\nlue\"", &cBasic{Section: cBasicS1{Name: "va\nlue"}}, true},
 	{"[section]\nname=\"va\\tlue\"", &cBasic{Section: cBasicS1{Name: "va\tlue"}}, true},
 	{"[section]\nname=x:\\\\path\\\\", &cBasic{Section: cBasicS1{Name: "x:\\path\\"}}, true},
+	{"[section]\nname=\\b", &cBasic{Section: cBasicS1{Name: "\b"}}, true},
 	{"\n[section]\nname=\\", &cBasic{}, false},
 	{"\n[section]\nname=\\a", &cBasic{}, false},
 	{"\n[section]\nname=\"val\\a\"", &cBasic{}, false},

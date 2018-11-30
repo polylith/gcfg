@@ -220,7 +220,7 @@ func (s *Scanner) scanValString() string {
 	end := offs
 	inQuote := false
 loop:
-	for inQuote || s.ch >= 0 && s.ch != '\n' && s.ch != ';' && s.ch != '#' {
+	for inQuote || s.ch >= 0 && s.ch != '\n' && s.ch != ';' {
 		ch := s.ch
 		s.next()
 		switch {
@@ -320,7 +320,7 @@ scanAgain:
 			tok = token.LBRACK
 		case ']':
 			tok = token.RBRACK
-		case ';', '#':
+		case ';':
 			// comment
 			lit = s.scanComment()
 			if s.mode&ScanComments == 0 {
